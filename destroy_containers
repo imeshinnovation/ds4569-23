@@ -1,0 +1,15 @@
+#!/bin/bash
+
+echo -e "Destruyendo los Contenedores del Orquestador"
+
+docker-compose down --rmi all -v --remove-orphans
+
+echo -e "Eliminación Manual de Fragmentos Huerfanos"
+docker container prune
+docker volume prune
+docker image prune
+
+for i in $(docker image ls | awk '{print $3}' | grep -v IMAGE)
+do
+docker image rm ${i}
+done

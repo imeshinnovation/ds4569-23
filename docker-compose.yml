@@ -1,0 +1,118 @@
+# Implementación DSpace con Docker
+
+services:
+
+  # Contenedor Base de Datos Postgres
+  dspacedb:
+    container_name: dspacedb
+    image: "${DOCKER_REGISTRY0:-docker.io}/${DOCKER_OWNER:-dspace}/dspace-postgres-pgcrypto:${DSPACE_VER}-loadsql"
+    environment:
+      LOADSQL: https://github.com/DSpace-Labs/AIP-Files/releases/download/demo-entities-data/dspace7-entities-data.sql
+      PGDATA: /pgdata
+      POSTGRES_PASSWORD: dspace
+    networks:
+      - dspacenet
+    ports:
+      - "5432:5432"
+    stdin_open: true
+    tty: true
+    volumes:
+      - pgdata:/pgdata
+
+  # Contenedor para el Backend
+
+  dspace:
+    container_name: dspace
+    environment:
+      dspace__P__dir: /dspace
+      dspace__P__name: 'DSpace Started with Docker Compose'
+      db__P__url: 'jdbc:postgresql://dspacedb:5432/dspace'
+      solr__P__server: http://dspacesolr:8983/solr
+      LOGGING_CONFIG: /dspace/config/log4j2-container.xml
+    image: "${DOCKER_REGISTRY0:-docker.io}/${DOCKER_OWNER:-dspace}/dspace:${DSPACE_VER:-dspace-8_x-test}"
+    depends_on:
+      - dspacedb
+      - dspacesolr
+    networks:
+      - dspacenet
+    ports:
+      - published: 8080
+        target: 8080
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./assetstore:/dspace/assetstore:rw
+    entrypoint:
+      - /bin/bash
+      - '-c'
+      - |
+        while (!</dev/tcp/dspacedb/5432) > /dev/null 2>&1; do sleep 1; done;
+        /dspace/bin/dspace database migrate
+        java -jar /dspace/webapps/server-boot.jar --dspace.dir=/dspace
+
+
+  # Contenedor para el Frontend
+  dspace-angular:
+    container_name: dspace-angular
+    build:
+      context: ./base_dspace_8x
+      dockerfile: Dockerfile.dist
+    environment:
+      DSPACE_UI_SSL: 'false'
+      DSPACE_UI_HOST: dspace-angular
+      DSPACE_UI_PORT: '4000'
+      DSPACE_UI_NAMESPACE: /
+      DSPACE_REST_SSL: ${DSPACE_BACKEND_SSL}
+      DSPACE_REST_HOST: ${DSPACE_BACKEND_URL}
+      DSPACE_REST_PORT: ${DSAPCE_BACKEND_SSL_PORT}
+      DSPACE_REST_NAMESPACE: /server
+    networks:
+      - dspacenet
+    ports:
+      - "4000:4000"
+    stdin_open: true
+    tty: true
+
+  # Contenedor para el SOLR
+  dspacesolr:
+    container_name: dspacesolr
+    image: "${DOCKER_REGISTRY0:-docker.io}/${DOCKER_OWNER:-dspace}/dspace-solr:${DSPACE_VER:-dspace-8_x}"
+    networks:
+      - dspacenet
+    ports:
+      - "8983:8983"
+    stdin_open: true
+    tty: true
+    working_dir: /var/solr/data
+    volumes:
+      - solr_data:/var/solr/data
+    user: root
+    entrypoint:
+      - /bin/bash
+      - '-c'
+      - |
+        init-var-solr
+        precreate-core authority /opt/solr/server/solr/configsets/authority
+        cp -r /opt/solr/server/solr/configsets/authority/* authority
+        precreate-core oai /opt/solr/server/solr/configsets/oai
+        cp -r /opt/solr/server/solr/configsets/oai/* oai
+        precreate-core search /opt/solr/server/solr/configsets/search
+        cp -r /opt/solr/server/solr/configsets/search/* search
+        precreate-core statistics /opt/solr/server/solr/configsets/statistics
+        cp -r /opt/solr/server/solr/configsets/statistics/* statistics
+        precreate-core qaevent /opt/solr/server/solr/configsets/qaevent
+        cp -r /opt/solr/server/solr/configsets/qaevent/* qaevent
+        precreate-core suggestion /opt/solr/server/solr/configsets/suggestion
+        cp -r /opt/solr/server/solr/configsets/suggestion/* suggestion
+        chown -R solr:solr /var/solr
+        runuser -u solr -- solr-foreground
+
+
+volumes:
+  assetstore:
+  pgdata:
+  solr_data:
+
+networks:
+  dspacenet:
+

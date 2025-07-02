@@ -1,0 +1,6 @@
+#!/bin/bash
+
+echo -e "Iniciando Despliegue de los Contenedores"
+echo -e ""
+echo -e ""
+docker-compose up -d --build

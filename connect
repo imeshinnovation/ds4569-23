@@ -1,0 +1,8 @@
+#!/bin/bash
+
+PORT=22
+IP=52.230.253.166
+KEY=prueba-dspace-vm_key.pem
+USER=azureuser
+
+ssh -p ${PORT} -i ../${KEY} ${USER}@${IP}
