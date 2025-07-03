@@ -5,7 +5,11 @@
          "cwd": "/app",
          "script": "dist/server/main.js",
          "instances": "max",
-         "exec_mode": "cluster"
+         "exec_mode": "cluster",
+         "env": {
+             "HOST": "0.0.0.0",
+             "PORT": "4000"
+      }
       }
   ]
 }

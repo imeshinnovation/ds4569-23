@@ -1,0 +1,24 @@
+[Unit]
+Description=Mount Azure Blob Storage with Blobfuse2
+After=network-online.target
+Requires=network-online.target
+StartLimitIntervalSec=60
+StartLimitBurst=3
+
+[Service]
+Type=simple
+User=root
+ExecStartPre=/bin/sleep 3
+ExecStart=/usr/bin/blobfuse2 mount /var/htdocs/dspace/azureblob --config-file=/var/htdocs/dspace/blobstorage.yml
+ExecStop=/bin/fusermount -uz /var/htdocs/dspace/azureblob
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+KillMode=process
+CapabilityBoundingSet=CAP_SYS_ADMIN
+DeviceAllow=/dev/fuse rw
+PrivateTmp=true
+MountFlags=shared
+
+[Install]
+WantedBy=multi-user.target

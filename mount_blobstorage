@@ -1,0 +1,7 @@
+#!/bin/bash
+
+blobfuse2 /var/htdocs/dspace/azureblob \
+  --tmp-path=/var/tmp/blobfuse-tmp \
+  --config-file=/var/htdocs/dspace/blobstorage.yml \
+  -o attr_timeout=240 -o entry_timeout=240 -o negative_timeout=120 \
+  --log-level=LOG_WARNING

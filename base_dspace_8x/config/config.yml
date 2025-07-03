@@ -1,5 +1,5 @@
 rest:
   ssl: true
-  host: sandbox.dspace.org
+  host: rest-pruebarepositorio.unimagdalena.edu.co
   port: 443
   nameSpace: /server

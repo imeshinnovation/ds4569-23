@@ -41,7 +41,7 @@ services:
     stdin_open: true
     tty: true
     volumes:
-      - ./assetstore:/dspace/assetstore:rw
+      - ./azureblob:/azureblob:rw
     entrypoint:
       - /bin/bash
       - '-c'
@@ -57,6 +57,7 @@ services:
     build:
       context: ./base_dspace_8x
       dockerfile: Dockerfile.dist
+    user: root
     environment:
       DSPACE_UI_SSL: 'false'
       DSPACE_UI_HOST: dspace-angular
@@ -69,7 +70,7 @@ services:
     networks:
       - dspacenet
     ports:
-      - "4000:4000"
+      - "4200:4000"
     stdin_open: true
     tty: true
 
@@ -106,6 +107,25 @@ services:
         cp -r /opt/solr/server/solr/configsets/suggestion/* suggestion
         chown -R solr:solr /var/solr
         runuser -u solr -- solr-foreground
+
+  nginx-waf:
+    build:
+      context: ./waf
+      dockerfile: Dockerfile
+    container_name: nginx-waf
+    user: root
+    depends_on:
+      - dspace
+      - dspace-angular
+    networks:
+      - dspacenet
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "80:80"
+      - "443:443"
+    restart: always
+
 
 
 volumes:
